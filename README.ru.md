@@ -9,8 +9,9 @@
 [![macOS 12+](https://img.shields.io/badge/macOS-12%2B-0A84FF?style=flat-square)](https://www.apple.com/macos/)
 [![Universal](https://img.shields.io/badge/Universal-arm64%20%2B%20x86__64-8B5CF6?style=flat-square)](#совместимость)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22C55E?style=flat-square)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/R3G1ST/betterdiscord-mac-installer?style=flat-square)](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest)
 
-[English version](README.md) · [Скачать](../../releases/latest) · [Как это работает](#как-это-работает) · [Решение проблем](#решение-проблем)
+[English version](README.md) · [Скачать](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest) · [Как это работает](#как-это-работает) · [Решение проблем](#решение-проблем)
 
 </div>
 
@@ -37,7 +38,7 @@
 
 ## Установка
 
-1. Скачай **`BetterDiscord-Mac-Installer-1.0.0.dmg`** из [последнего релиза](../../releases/latest).
+1. Скачай **`BetterDiscord-Mac-Installer-1.0.0.dmg`** из [последнего релиза](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest).
 2. Открой DMG и перетащи **BetterDiscord Installer** в **Applications**.
 3. **Первый запуск:** правый клик по приложению → **Открыть** → **Открыть**.
    Приложение подписано ad-hoc, но не нотаризовано (у проекта нет Apple Developer ID), поэтому macOS один раз попросит подтверждение.
@@ -131,7 +132,7 @@ rm -rf "$HOME/Library/Application Support/BetterDiscord"
 Нужны macOS 12+ и Xcode Command Line Tools.
 
 ```sh
-git clone <этот-репозиторий>
+git clone https://github.com/R3G1ST/betterdiscord-mac-installer.git
 cd BetterDiscordInstaller
 
 ./build.sh              # universal-приложение + иконка

@@ -9,9 +9,10 @@
 [![macOS 12+](https://img.shields.io/badge/macOS-12%2B-0A84FF?style=flat-square)](https://www.apple.com/macos/)
 [![Universal](https://img.shields.io/badge/Universal-arm64%20%2B%20x86__64-8B5CF6?style=flat-square)](#compatibility)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22C55E?style=flat-square)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/R3G1ST/betterdiscord-mac-installer?style=flat-square)](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest)
 [![Made with SwiftUI](https://img.shields.io/badge/SwiftUI-native-F05138?style=flat-square)](https://developer.apple.com/swiftui/)
 
-[Русская версия](README.ru.md) · [Download](../../releases/latest) · [How it works](#how-it-works) · [Troubleshooting](#troubleshooting)
+[Русская версия](README.ru.md) · [Download](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest) · [How it works](#how-it-works) · [Troubleshooting](#troubleshooting)
 
 </div>
 
@@ -38,7 +39,7 @@ This project installs BetterDiscord **without touching the Discord application b
 
 ## Install
 
-1. Download **`BetterDiscord-Mac-Installer-1.0.0.dmg`** from the [latest release](../../releases/latest).
+1. Download **`BetterDiscord-Mac-Installer-1.0.0.dmg`** from the [latest release](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest).
 2. Open the DMG and drag **BetterDiscord Installer** to **Applications**.
 3. **First launch:** right-click the app → **Open** → **Open**.
    The app is ad-hoc signed but not notarized (there is no Apple Developer ID behind this project), so macOS asks for confirmation once.
@@ -132,7 +133,7 @@ rm -rf "$HOME/Library/Application Support/BetterDiscord"
 Requirements: macOS 12+, Xcode Command Line Tools.
 
 ```sh
-git clone <this-repo>
+git clone https://github.com/R3G1ST/betterdiscord-mac-installer.git
 cd BetterDiscordInstaller
 
 ./build.sh              # universal app + icon
