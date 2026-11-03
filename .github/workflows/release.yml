@@ -20,14 +20,25 @@ jobs:
       - name: Build app and DMG
         run: |
           chmod +x build.sh build-dmg.sh
+          VERSION="${{ inputs.version }}"
           ./build.sh
-          CI=1 ./build-dmg.sh "${{ inputs.version }}"
+          CI=1 ./build-dmg.sh "$VERSION"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "dist/BetterDiscord Installer.app" \
+            "dist/BetterDiscord-Mac-Installer-${VERSION}.zip"
+          shasum -a 256 \
+            "dist/BetterDiscord-Mac-Installer-${VERSION}.dmg" \
+            "dist/BetterDiscord-Mac-Installer-${VERSION}.zip" \
+            > dist/checksums.txt
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version }}
           name: BetterDiscord Installer ${{ inputs.version }}
-          files: dist/*.dmg
+          files: |
+            dist/*.dmg
+            dist/*.zip
+            dist/checksums.txt
           generate_release_notes: true
           fail_on_unmatched_files: true
