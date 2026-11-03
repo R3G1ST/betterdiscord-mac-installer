@@ -39,14 +39,41 @@ This project installs BetterDiscord **without touching the Discord application b
 
 ## Install
 
-1. Download **`BetterDiscord-Mac-Installer-1.0.0.dmg`** from the [latest release](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest).
-2. Open the DMG and drag **BetterDiscord Installer** to **Applications**.
-3. **First launch:** right-click the app → **Open** → **Open**.
-   The app is ad-hoc signed but not notarized (there is no Apple Developer ID behind this project), so macOS asks for confirmation once.
-4. Click **Install BetterDiscord**. Discord will restart automatically.
-5. Done. Open Discord → **User Settings (⌘,)** → **BetterDiscord**.
+### Option A — one command (recommended on macOS 26 Tahoe)
 
-> **No admin rights required.** The installer never modifies `/Applications/Discord.app`; it only writes to your user Library.
+macOS 26 blocks unnotarized DMGs downloaded through a browser, and
+right-click → **Open** no longer bypasses it. This command downloads the DMG
+with `curl` (no quarantine flag), installs the app to `/Applications` and
+opens it:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/R3G1ST/betterdiscord-mac-installer/main/install.sh | bash
+```
+
+### Option B — DMG
+
+1. Download **`BetterDiscord-Mac-Installer-1.0.0.dmg`** from the [latest release](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest).
+2. If macOS says **“Apple could not verify…”** or **“is damaged”**, click **Done** and run:
+   ```sh
+   xattr -d com.apple.quarantine ~/Downloads/BetterDiscord-Mac-Installer-1.0.0.dmg
+   open ~/Downloads/BetterDiscord-Mac-Installer-1.0.0.dmg
+   ```
+3. Drag **BetterDiscord Installer** to **Applications**.
+4. Remove the quarantine flag from the installed app and open it:
+   ```sh
+   xattr -dr com.apple.quarantine "/Applications/BetterDiscord Installer.app"
+   open "/Applications/BetterDiscord Installer.app"
+   ```
+5. Click **Install BetterDiscord**. Discord restarts automatically.
+6. Open Discord → **User Settings (⌘,)** → **BetterDiscord**.
+
+> **Why is this needed?** The app is ad-hoc signed but not notarized — Apple
+> notarization requires a paid Developer ID. macOS 26 treats such apps as
+> untrusted, so the quarantine flag must be removed once manually.
+> On macOS 15 and earlier you can simply right-click the app → **Open** instead.
+>
+> **No admin rights are required.** The installer never modifies
+> `/Applications/Discord.app`; it only writes to your user Library.
 
 ## Usage
 

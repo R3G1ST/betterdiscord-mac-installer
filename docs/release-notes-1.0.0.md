@@ -3,6 +3,27 @@
 A native, animated installer and self-healing auto-repair agent for
 [BetterDiscord](https://betterdiscord.app) on macOS.
 
+## macOS 26 Tahoe: DMG blocked?
+
+macOS 26 blocks unnotarized DMGs downloaded through a browser, and
+right-click → Open no longer bypasses it. Use the one-line installer:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/R3G1ST/betterdiscord-mac-installer/main/install.sh | bash
+```
+
+Or unblock the DMG manually:
+
+```sh
+xattr -d com.apple.quarantine ~/Downloads/BetterDiscord-Mac-Installer-1.0.0.dmg
+open ~/Downloads/BetterDiscord-Mac-Installer-1.0.0.dmg
+# after dragging to Applications:
+xattr -dr com.apple.quarantine "/Applications/BetterDiscord Installer.app"
+```
+
+This is a limitation of unnotarized software on macOS 26 — Apple notarization
+requires a paid Developer ID. On macOS 15 and earlier, right-click → Open works.
+
 ## Install
 
 1. Download `BetterDiscord-Mac-Installer-1.0.0.dmg`.
