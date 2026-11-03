@@ -11,7 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-22C55E?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/R3G1ST/betterdiscord-mac-installer?style=flat-square)](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest)
 
-[English version](README.md) · [Скачать](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest) · [Как это работает](#как-это-работает) · [Решение проблем](#решение-проблем)
+[English](README.md) · **Русский** · [Скачать](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest) · [Как это работает](#как-это-работает) · [Решение проблем](#решение-проблем)
 
 </div>
 

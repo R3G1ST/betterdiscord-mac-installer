@@ -1,3 +1,5 @@
+**English** · [Русский](#русский)
+
 # BetterDiscord Installer 1.0.0 for macOS
 
 A native, animated installer and self-healing auto-repair agent for

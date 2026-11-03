@@ -12,7 +12,7 @@
 [![Release](https://img.shields.io/github/v/release/R3G1ST/betterdiscord-mac-installer?style=flat-square)](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest)
 [![Made with SwiftUI](https://img.shields.io/badge/SwiftUI-native-F05138?style=flat-square)](https://developer.apple.com/swiftui/)
 
-[Русская версия](README.ru.md) · [Download](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest) · [How it works](#how-it-works) · [Troubleshooting](#troubleshooting)
+**English** · [Русский](README.ru.md) · [Download](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest) · [How it works](#how-it-works) · [Troubleshooting](#troubleshooting)
 
 </div>
 
