@@ -1,9 +1,11 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version without the v prefix (for example 1.0.0)"
+        required: true
 
 permissions:
   contents: write
@@ -19,11 +21,13 @@ jobs:
         run: |
           chmod +x build.sh build-dmg.sh
           ./build.sh
-          CI=1 ./build-dmg.sh "${GITHUB_REF_NAME#v}"
+          CI=1 ./build-dmg.sh "${{ inputs.version }}"
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ inputs.version }}
+          name: BetterDiscord Installer ${{ inputs.version }}
           files: dist/*.dmg
           generate_release_notes: true
           fail_on_unmatched_files: true
