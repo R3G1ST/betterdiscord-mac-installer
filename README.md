@@ -1,109 +1,107 @@
 <div align="center">
 
-<img src="docs/icon.png" width="112" alt="BetterDiscord Installer icon">
+<img src="docs/icon.png" width="112" alt="BetterDiscord Installer">
 
-# BetterDiscord Installer for macOS
+# BetterDiscord Installer для macOS
 
-**A native, animated installer and self-healing auto-repair agent for [BetterDiscord](https://betterdiscord.app) on macOS.**
+**Нативный установщик BetterDiscord с анимациями и автовосстановлением после обновлений Discord.**
 
 [![macOS 12+](https://img.shields.io/badge/macOS-12%2B-0A84FF?style=flat-square)](https://www.apple.com/macos/)
-[![Universal](https://img.shields.io/badge/Universal-arm64%20%2B%20x86__64-8B5CF6?style=flat-square)](#compatibility)
+[![Universal](https://img.shields.io/badge/Universal-arm64%20%2B%20x86__64-8B5CF6?style=flat-square)](#совместимость)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22C55E?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/R3G1ST/betterdiscord-mac-installer?style=flat-square)](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest)
-[![Made with SwiftUI](https://img.shields.io/badge/SwiftUI-native-F05138?style=flat-square)](https://developer.apple.com/swiftui/)
 
-**English** · [Русский](README.ru.md) · [Download](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest) · [How it works](#how-it-works) · [Troubleshooting](#troubleshooting)
+[English](README.en.md) · **Русский** · [Скачать](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest) · [Как это работает](#как-это-работает) · [Решение проблем](#решение-проблем)
 
 </div>
 
 ![BetterDiscord Installer](docs/screenshot.jpg)
 
-## Why this exists
+## Зачем это нужно
 
-The official BetterDiscord installer v2.0.0 currently has two macOS problems:
+У официального установщика BetterDiscord v2.0.0 есть две проблемы на macOS:
 
-- it crashes at launch on **Apple M5** because of a `go-m1cpu` bug ([Installer #434](https://github.com/BetterDiscord/Installer/issues/434));
-- on macOS 26 it cannot reliably write into `/Applications/Discord.app` because of App Management, and its bundle is not properly signed ([Installer #424](https://github.com/BetterDiscord/Installer/issues/424)).
+- он падает при запуске на **Apple M5** из-за бага в `go-m1cpu` ([Installer #434](https://github.com/BetterDiscord/Installer/issues/434));
+- на macOS 26 он не может стабильно писать в `/Applications/Discord.app` из-за App Management, а его bundle подписан неправильно ([Installer #424](https://github.com/BetterDiscord/Installer/issues/424)).
 
-This project installs BetterDiscord **without touching the Discord application bundle at all**. It uses Discord's per-user core module, the same technique the v1.x installer used, and adds automatic repair after Discord updates.
+Этот установщик **вообще не трогает `Discord.app`**. Он подключает BetterDiscord через пользовательский core-модуль Discord — тот же способ, который использовал установщик v1.x, — и автоматически восстанавливает инъекцию после обновлений.
 
-## Features
+## Возможности
 
-- 🎨 **Native SwiftUI UI** — animated gradients, glow, hover/press effects, smooth window resizing and success animations.
-- ⚡ **One-click install / reinstall / remove** — no Terminal, no `sudo`, no admin password.
-- 🛡 **Self-healing** — a small LaunchAgent checks every 2 minutes and re-applies the injection after a Discord update. You install once and forget it.
-- 🧩 **Stable, PTB and Canary** — all installed Discord channels are detected and patched.
-- 💾 **Keeps your data** — plugins, themes and settings stay in `~/Library/Application Support/BetterDiscord`.
-- 🧬 **Universal binary** — Apple Silicon and Intel, macOS 12 Monterey or newer.
-- 🔓 **Open source** — MIT licensed, no telemetry, no bundled third-party code.
+- 🎨 **Нативный интерфейс на SwiftUI** — анимированные градиенты, свечение, hover/press-эффекты, плавное изменение размера окна.
+- ⚡ **Установка / переустановка / удаление в один клик** — без Terminal, `sudo` и пароля администратора.
+- 🛡 **Автовосстановление** — LaunchAgent раз в 2 минуты проверяет Discord и повторяет инъекцию после обновления. Один раз установил — дальше можно забыть.
+- 🧩 **Stable, PTB и Canary** — находятся и патчатся все установленные каналы.
+- 💾 **Данные сохраняются** — плагины, темы и настройки остаются в `~/Library/Application Support/BetterDiscord`.
+- 🧬 **Universal** — Apple Silicon и Intel, macOS 12 Monterey и новее.
+- 🔓 **Открытый код** — MIT, без телеметрии и без встроенного стороннего кода.
 
-## Install
+## Установка
 
-### Option A — one command (recommended on macOS 26 Tahoe)
+### Вариант A — одна команда (рекомендую для macOS 26 Tahoe)
 
-macOS 26 blocks unnotarized DMGs downloaded through a browser, and
-right-click → **Open** no longer bypasses it. This command downloads the DMG
-with `curl` (no quarantine flag), installs the app to `/Applications` and
-opens it:
+macOS 26 блокирует DMG без нотаризации, скачанные через браузер, и правый клик →
+**Открыть** больше не помогает. Эта команда скачивает DMG через `curl` (без флага
+quarantine), ставит приложение в `/Applications` и запускает его:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/R3G1ST/betterdiscord-mac-installer/main/install.sh | bash
 ```
 
-### Option B — DMG
+### Вариант B — DMG
 
-1. Download **`BetterDiscord-Mac-Installer-1.0.0.dmg`** from the [latest release](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest).
-2. If macOS says **“Apple could not verify…”** or **“is damaged”**, click **Done** and run:
+1. Скачай **`BetterDiscord-Mac-Installer-1.0.0.dmg`** из [последнего релиза](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest).
+2. Если macOS пишет **«Apple не удалось подтвердить…»** или **«повреждён»** — нажми **«Готово»** и выполни:
    ```sh
    xattr -d com.apple.quarantine ~/Downloads/BetterDiscord-Mac-Installer-1.0.0.dmg
    open ~/Downloads/BetterDiscord-Mac-Installer-1.0.0.dmg
    ```
-3. Drag **BetterDiscord Installer** to **Applications**.
-4. Remove the quarantine flag from the installed app and open it:
+3. Перетащи **BetterDiscord Installer** в **Applications**.
+4. Сними quarantine с установленного приложения и открой его:
    ```sh
    xattr -dr com.apple.quarantine "/Applications/BetterDiscord Installer.app"
    open "/Applications/BetterDiscord Installer.app"
    ```
-5. Click **Install BetterDiscord**. Discord restarts automatically.
-6. Open Discord → **User Settings (⌘,)** → **BetterDiscord**.
+5. Нажми **«Установить BetterDiscord»**. Discord перезапустится автоматически.
+6. Открой Discord → **Настройки пользователя (⌘,)** → **BetterDiscord**.
 
-> **Why is this needed?** The app is ad-hoc signed but not notarized — Apple
-> notarization requires a paid Developer ID. macOS 26 treats such apps as
-> untrusted, so the quarantine flag must be removed once manually.
-> On macOS 15 and earlier you can simply right-click the app → **Open** instead.
+> **Почему так?** Приложение подписано ad-hoc, но не нотаризовано — для
+> нотаризации нужен платный Apple Developer ID. macOS 26 считает такие
+> приложения недоверенными, поэтому флаг quarantine нужно снять один раз вручную.
+> На macOS 15 и раньше достаточно правого клика → **Открыть**.
 >
-> **No admin rights are required.** The installer never modifies
-> `/Applications/Discord.app`; it only writes to your user Library.
+> **Права администратора не нужны.** Установщик не меняет
+> `/Applications/Discord.app`, а пишет только в твою пользовательскую Library.
 
-## Usage
+## Использование
 
-| Action | What it does |
+| Кнопка | Что делает |
 | --- | --- |
-| **Install / Reinstall** | Closes Discord, downloads the latest official `betterdiscord.asar`, patches the active core module and restarts Discord. |
-| **Remove** | Restores the original `index.js`, disables auto-repair and restarts Discord. Your plugins and themes are kept. |
-| **Auto-repair** | When enabled, a LaunchAgent re-applies the patch after Discord updates — even if this app is closed or deleted. |
+| **Установить / Переустановить** | Закрывает Discord, скачивает актуальный официальный `betterdiscord.asar`, патчит активный core-модуль и перезапускает Discord. |
+| **Удалить** | Возвращает оригинальный `index.js`, выключает автовосстановление и перезапускает Discord. Плагины и темы сохраняются. |
+| **Автовосстановление** | LaunchAgent повторяет патч после обновлений Discord — даже если приложение закрыто или удалено. |
 
-![Details view](docs/screenshot-details.jpg)
+![Подробности](docs/screenshot-details.jpg)
 
-## How it works
+## Как это работает
 
-Instead of modifying `Discord.app`, the installer patches the per-user module that Discord loads at startup:
+Вместо изменения `Discord.app` установщик патчит пользовательский модуль, который Discord загружает при старте:
 
 ```text
-~/Library/Application Support/discord/app-<version>/modules/
+~/Library/Application Support/discord/app-<версия>/modules/
 └── discord_desktop_core-1/discord_desktop_core/index.js
 ```
 
-The original file is saved next to it as `index.js.orig`, and `index.js` becomes:
+Оригинал сохраняется рядом как `index.js.orig`, а `index.js` становится таким:
 
 ```js
-require("/Users/<you>/Library/Application Support/BetterDiscord/data/betterdiscord.asar");
+require("/Users/<ты>/Library/Application Support/BetterDiscord/data/betterdiscord.asar");
 module.exports = require("./core.asar");
 ```
 
-`betterdiscord.asar` is downloaded from the official [BetterDiscord releases](https://github.com/BetterDiscord/BetterDiscord/releases) — it is **not** bundled with this project.
+`betterdiscord.asar` скачивается из официальных [релизов BetterDiscord](https://github.com/BetterDiscord/BetterDiscord/releases) — он **не** входит в этот проект.
 
-Auto-repair files:
+Файлы автовосстановления:
 
 ```text
 ~/Library/Application Support/BetterDiscord/auto-repair.sh
@@ -111,43 +109,43 @@ Auto-repair files:
 ~/Library/Application Support/BetterDiscord/auto-repair.log
 ```
 
-## Compatibility
+## Совместимость
 
 | | |
 | --- | --- |
-| macOS | 12 Monterey or newer |
-| CPU | Apple Silicon + Intel (universal) |
+| macOS | 12 Monterey или новее |
+| Процессор | Apple Silicon + Intel (universal) |
 | Discord | Stable, PTB, Canary |
-| Installer version | 1.0.0 |
+| Версия установщика | 1.0.0 |
 
-Discord must be installed in `/Applications` or `~/Applications`.
+Discord должен быть установлен в `/Applications` или `~/Applications`.
 
-## Troubleshooting
+## Решение проблем
 
-**“Discord ещё не запускался” / “Discord has not been launched yet”**
-Launch Discord once, quit it, then open the installer again. Discord creates the core module on its first run.
+**«Discord ещё не запускался»**
+Запусти Discord один раз, закрой его и открой установщик снова. Core-модуль создаётся при первом запуске Discord.
 
-**macOS refuses to open the app**
-Right-click → **Open** → **Open**. Alternatively:
+**macOS не даёт открыть приложение**
+Правый клик → **Открыть** → **Открыть**. Либо:
 
 ```sh
 xattr -dr com.apple.quarantine "/Applications/BetterDiscord Installer.app"
 ```
 
-**BetterDiscord is not visible in Discord settings**
-Make sure the install finished without errors, then fully quit Discord (⌘Q) and open it again. Check the log in the app under **Details**.
+**В настройках Discord нет BetterDiscord**
+Убедись, что установка завершилась без ошибок, полностью закрой Discord (⌘Q) и открой снова. Лог смотри в приложении по кнопке **«Подробности»**.
 
-**After a Discord update**
-Auto-repair handles it within a couple of minutes and restarts Discord. If auto-repair is disabled, just press **Install** again.
+**После обновления Discord**
+Автовосстановление сработает в течение пары минут и перезапустит Discord. Если оно выключено — просто нажми **«Установить»** ещё раз.
 
-**Auto-repair log**
+**Лог автовосстановления**
 
 ```sh
 tail -50 "$HOME/Library/Application Support/BetterDiscord/auto-repair.log"
 ```
 
-**Uninstall**
-Press **Remove** in the app. To remove everything manually:
+**Удаление**
+Нажми **«Удалить»** в приложении. Полностью вручную:
 
 ```sh
 launchctl bootout "gui/$(id -u)/app.betterdiscord.installer.autorepair" 2>/dev/null
@@ -155,42 +153,42 @@ rm -f "$HOME/Library/LaunchAgents/app.betterdiscord.installer.autorepair.plist"
 rm -rf "$HOME/Library/Application Support/BetterDiscord"
 ```
 
-## Build from source
+## Сборка из исходников
 
-Requirements: macOS 12+, Xcode Command Line Tools.
+Нужны macOS 12+ и Xcode Command Line Tools.
 
 ```sh
 git clone https://github.com/R3G1ST/betterdiscord-mac-installer.git
 cd BetterDiscordInstaller
 
-./build.sh              # universal app + icon
-./build-dmg.sh 1.0.0    # styled DMG in dist/
+./build.sh              # universal-приложение + иконка
+./build-dmg.sh 1.0.0    # оформленный DMG в dist/
 ```
 
-Outputs:
+Результат:
 
 ```text
 dist/BetterDiscord Installer.app
 dist/BetterDiscord-Mac-Installer-1.0.0.dmg
 ```
 
-The app is ad-hoc signed (`codesign --force --deep --sign -`). Without a Developer ID certificate it cannot be notarized, so first launch requires right-click → Open.
+Приложение подписано ad-hoc. Без сертификата Developer ID его нельзя нотаризовать, поэтому при первом запуске нужно правый клик → «Открыть».
 
-## Credits
+## Благодарности
 
-This project would not exist without the work of the BetterDiscord team:
+Проект был бы невозможен без команды BetterDiscord:
 
-- **[BetterDiscord](https://github.com/BetterDiscord/BetterDiscord)** — Apache-2.0, © BetterDiscord Team. Created by [Zerebos](https://github.com/zerebos) and contributors.
-- **[BetterDiscord Installer](https://github.com/BetterDiscord/Installer)** — MIT, © BetterDiscord Team. The injection approach and download endpoints are based on the v1.x installer by [Zerebos](https://github.com/zerebos) and contributors.
-- The community workaround for macOS App Management from [Installer #424](https://github.com/BetterDiscord/Installer/issues/424).
-- [Discord](https://discord.com) is a trademark of Discord Inc.
+- **[BetterDiscord](https://github.com/BetterDiscord/BetterDiscord)** — Apache-2.0, © BetterDiscord Team. Автор — [Zerebos](https://github.com/zerebos) и контрибьюторы.
+- **[BetterDiscord Installer](https://github.com/BetterDiscord/Installer)** — MIT, © BetterDiscord Team. Способ инъекции и эндпоинты загрузки основаны на установщике v1.x ([Zerebos](https://github.com/zerebos) и контрибьюторы).
+- Обходной путь для App Management из [Installer #424](https://github.com/BetterDiscord/Installer/issues/424).
+- [Discord](https://discord.com) — торговая марка Discord Inc.
 
-See [NOTICE.md](NOTICE.md) for full third-party notices.
+Полные уведомления: [NOTICE.md](NOTICE.md).
 
-## Disclaimer
+## Дисклеймер
 
-This is an **unofficial** community project. It is not affiliated with, endorsed by, or supported by Discord Inc. or the BetterDiscord team. Using BetterDiscord modifies the Discord client and may violate Discord's Terms of Service — use at your own risk.
+Это **неофициальный** проект. Он не связан с Discord Inc. и командой BetterDiscord и не поддерживается ими. BetterDiscord изменяет клиент Discord и может нарушать Terms of Service Discord — используй на свой риск.
 
-## License
+## Лицензия
 
 [MIT](LICENSE) © BetterDiscord Mac Installer contributors.
