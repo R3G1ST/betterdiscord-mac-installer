@@ -378,7 +378,7 @@ CHANGED=0
 
 [ -f "$STAMP" ] && LAST="$(/usr/bin/stat -f %m "$STAMP" 2>/dev/null || echo 0)"
 
-if [ $((NOW - LAST)) -gt 21600 ]; then
+if [ $((NOW - LAST)) -gt 1800 ]; then
   /usr/bin/touch "$STAMP"
   REMOTE="$(/usr/bin/curl -fsIL --max-time 20 \
     "https://github.com/BetterDiscord/BetterDiscord/releases/download/canary/betterdiscord.asar" \
