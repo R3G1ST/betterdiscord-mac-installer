@@ -50,11 +50,11 @@ curl -fsSL https://raw.githubusercontent.com/R3G1ST/betterdiscord-mac-installer/
 
 ### Вариант B — DMG
 
-1. Скачай **`BetterDiscord-Mac-Installer-1.0.0.dmg`** из [последнего релиза](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest).
+1. Скачай **`BetterDiscord-Mac-Installer-1.0.2.dmg`** из [последнего релиза](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest).
 2. Если macOS пишет **«Apple не удалось подтвердить…»** или **«повреждён»** — нажми **«Готово»** и выполни:
    ```sh
-   xattr -d com.apple.quarantine ~/Downloads/BetterDiscord-Mac-Installer-1.0.0.dmg
-   open ~/Downloads/BetterDiscord-Mac-Installer-1.0.0.dmg
+   xattr -d com.apple.quarantine ~/Downloads/BetterDiscord-Mac-Installer-1.0.2.dmg
+   open ~/Downloads/BetterDiscord-Mac-Installer-1.0.2.dmg
    ```
 3. Перетащи **BetterDiscord Installer** в **Applications**.
 4. Сними quarantine с установленного приложения и открой его:
@@ -101,6 +101,8 @@ module.exports = require("./core.asar");
 
 `betterdiscord.asar` скачивается из официальных [релизов BetterDiscord](https://github.com/BetterDiscord/BetterDiscord/releases) — он **не** входит в этот проект.
 
+На Discord 0.0.421+ установщик использует официальную **Canary-сборку BetterDiscord** (ветка development). Стабильная 1.14.5 на этих версиях Discord не инициализируется; автовосстановление раз в 6 часов обновляет Canary-asar и перезапускает Discord при изменении.
+
 Файлы автовосстановления:
 
 ```text
@@ -116,7 +118,7 @@ module.exports = require("./core.asar");
 | macOS | 12 Monterey или новее |
 | Процессор | Apple Silicon + Intel (universal) |
 | Discord | Stable, PTB, Canary |
-| Версия установщика | 1.0.0 |
+| Версия установщика | 1.0.2 |
 
 Discord должен быть установлен в `/Applications` или `~/Applications`.
 
@@ -137,6 +139,9 @@ xattr -dr com.apple.quarantine "/Applications/BetterDiscord Installer.app"
 
 **После обновления Discord**
 Автовосстановление сработает в течение пары минут и перезапустит Discord. Если оно выключено — просто нажми **«Установить»** ещё раз.
+
+**«Нет доступа к папке Discord»**
+macOS 26 защищает `~/Library/Application Support/discord`. Открой карточку разрешения в приложении (или **System Settings → Privacy & Security → Full Disk Access**), добавь **BetterDiscord Installer**, включи его и перезапусти приложение. Это разовое разрешение; дальше им пользуется автовосстановление.
 
 **Лог автовосстановления**
 
@@ -162,14 +167,14 @@ git clone https://github.com/R3G1ST/betterdiscord-mac-installer.git
 cd BetterDiscordInstaller
 
 ./build.sh              # universal-приложение + иконка
-./build-dmg.sh 1.0.0    # оформленный DMG в dist/
+./build-dmg.sh 1.0.2    # оформленный DMG в dist/
 ```
 
 Результат:
 
 ```text
 dist/BetterDiscord Installer.app
-dist/BetterDiscord-Mac-Installer-1.0.0.dmg
+dist/BetterDiscord-Mac-Installer-1.0.2.dmg
 ```
 
 Приложение подписано ad-hoc. Без сертификата Developer ID его нельзя нотаризовать, поэтому при первом запуске нужно правый клик → «Открыть».

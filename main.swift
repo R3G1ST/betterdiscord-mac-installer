@@ -47,19 +47,49 @@ func supportDirs() -> [URL] {
         .filter { fm.fileExists(atPath: $0.path) }
 }
 
+func isPermissionError(_ error: Error) -> Bool {
+    let error = error as NSError
+    if error.domain == NSCocoaErrorDomain {
+        return error.code == NSFileReadNoPermissionError
+    }
+    if error.domain == NSPOSIXErrorDomain {
+        return error.code == Int(EPERM) || error.code == Int(EACCES)
+    }
+    return false
+}
+
+enum DiscordDataAccess {
+    static var lastError: Error?
+    static var denied: Bool { lastError.map(isPermissionError) ?? false }
+}
+
 func coreIndexFiles() -> [URL] {
     var result: [URL] = []
-    for dir in supportDirs() {
-        guard let versions = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) else { continue }
-        for v in versions where v.lastPathComponent.hasPrefix("app-") {
-            let modsDir = v.appendingPathComponent("modules", isDirectory: true)
-            guard let mods = try? fm.contentsOfDirectory(at: modsDir, includingPropertiesForKeys: nil) else { continue }
-            for m in mods where m.lastPathComponent.hasPrefix("discord_desktop_core") {
-                let idx = m
-                    .appendingPathComponent("discord_desktop_core", isDirectory: true)
-                    .appendingPathComponent("index.js")
-                if fm.fileExists(atPath: idx.path) { result.append(idx) }
+    DiscordDataAccess.lastError = nil
+
+    // Не фильтруем через fileExists: macOS 26 App Data может запрещать даже stat,
+    // а нам нужно отличить «папки нет» от «нет доступа».
+    let dirs = supportNames.map { supportRoot.appendingPathComponent($0, isDirectory: true) }
+
+    for dir in dirs {
+        do {
+            let versions = try fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+            for v in versions where v.lastPathComponent.hasPrefix("app-") {
+                let modsDir = v.appendingPathComponent("modules", isDirectory: true)
+                do {
+                    let mods = try fm.contentsOfDirectory(at: modsDir, includingPropertiesForKeys: nil)
+                    for m in mods where m.lastPathComponent.hasPrefix("discord_desktop_core") {
+                        let idx = m
+                            .appendingPathComponent("discord_desktop_core", isDirectory: true)
+                            .appendingPathComponent("index.js")
+                        if fm.fileExists(atPath: idx.path) { result.append(idx) }
+                    }
+                } catch {
+                    if isPermissionError(error) { DiscordDataAccess.lastError = error }
+                }
             }
+        } catch {
+            if isPermissionError(error) { DiscordDataAccess.lastError = error }
         }
     }
     return result
@@ -87,6 +117,9 @@ func discordVersion() -> String {
 
 func statusText() -> String {
     let idxs = coreIndexFiles()
+    if DiscordDataAccess.denied {
+        return "Нет доступа к папке Discord. Нужен Full Disk Access для BetterDiscord Installer."
+    }
     if idxs.isEmpty {
         return "Discord ещё не запускался. Запустите его один раз и закройте — потом нажмите «Установить»."
     }
@@ -166,38 +199,55 @@ func ensureBDAsar() throws {
     try fm.createDirectory(at: bdRoot.appendingPathComponent("plugins", isDirectory: true), withIntermediateDirectories: true)
     try fm.createDirectory(at: bdRoot.appendingPathComponent("themes", isDirectory: true), withIntermediateDirectories: true)
 
-    if let attrs = try? fm.attributesOfItem(atPath: bdAsar.path),
-       let size = attrs[.size] as? NSNumber,
-       size.intValue > 100_000 {
-        log("betterdiscord.asar уже на месте")
+    // BetterDiscord 1.14.5 (stable) не инициализируется на Discord 0.0.421.
+    // Canary 1.14.6+ это исправляет, поэтому сначала пробуем development-сборку.
+    let urls = [
+        "https://github.com/BetterDiscord/BetterDiscord/releases/download/canary/betterdiscord.asar",
+        "https://github.com/BetterDiscord/BetterDiscord/releases/latest/download/betterdiscord.asar"
+    ]
+    let tmp = bdData.appendingPathComponent("betterdiscord.asar.tmp")
+    var lastError = ""
+
+    for url in urls {
+        try? fm.removeItem(at: tmp)
+        log("Скачиваю BetterDiscord…")
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
+        process.arguments = ["-fL", "--retry", "3", "--max-time", "120", "-o", tmp.path, url]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+
+        do {
+            try process.run()
+        } catch {
+            lastError = error.localizedDescription
+            continue
+        }
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+
+        if process.terminationStatus == 0,
+           let attrs = try? fm.attributesOfItem(atPath: tmp.path),
+           let size = attrs[.size] as? NSNumber,
+           size.intValue > 100_000 {
+            try? fm.removeItem(at: bdAsar)
+            try fm.moveItem(at: tmp, to: bdAsar)
+            log("BetterDiscord обновлён (\(size.intValue) байт)")
+            return
+        }
+
+        lastError = String(data: data, encoding: .utf8) ?? "curl exit \(process.terminationStatus)"
+    }
+
+    if fm.fileExists(atPath: bdAsar.path) {
+        log("Не удалось обновить BetterDiscord, использую текущую версию")
         return
     }
 
-    log("Скачиваю betterdiscord.asar…")
-    let tmp = bdData.appendingPathComponent("betterdiscord.asar.tmp")
-    try? fm.removeItem(at: tmp)
-
-    let p = Process()
-    p.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
-    p.arguments = [
-        "-fL", "--retry", "3", "-o", tmp.path,
-        "https://github.com/BetterDiscord/BetterDiscord/releases/latest/download/betterdiscord.asar"
-    ]
-    let pipe = Pipe()
-    p.standardOutput = pipe
-    p.standardError = pipe
-    try p.run()
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    p.waitUntilExit()
-
-    guard p.terminationStatus == 0 else {
-        let msg = String(data: data, encoding: .utf8) ?? ""
-        throw BDError("Не удалось скачать betterdiscord.asar.\n\(msg)")
-    }
-
-    try? fm.removeItem(at: bdAsar)
-    try fm.moveItem(at: tmp, to: bdAsar)
-    log("betterdiscord.asar скачан")
+    throw BDError("Не удалось скачать betterdiscord.asar.\n\(lastError)")
 }
 
 struct InstallResult {
@@ -216,6 +266,9 @@ func installBD() throws -> InstallResult {
 
     let idxs = coreIndexFiles()
     guard !idxs.isEmpty else {
+        if DiscordDataAccess.denied {
+            throw BDError("Нет доступа к папке Discord.\nВыдайте Full Disk Access приложению BetterDiscord Installer и перезапустите его.")
+        }
         throw BDError("Не найден core-модуль Discord.\nЗапустите Discord один раз, закройте и повторите.")
     }
 
@@ -249,6 +302,9 @@ func uninstallBD() throws -> Int {
     let running = quitDiscord()
     let idxs = coreIndexFiles()
     guard !idxs.isEmpty else {
+        if DiscordDataAccess.denied {
+            throw BDError("Нет доступа к папке Discord.\nВыдайте Full Disk Access приложению BetterDiscord Installer и перезапустите его.")
+        }
         throw BDError("Не найден core-модуль Discord.")
     }
 
@@ -306,46 +362,53 @@ enum AutoRepair {
     static let script = #"""
 #!/bin/bash
 # Автовосстановление BetterDiscord после обновлений Discord.
+# 1) Раз в 6 часов обновляет BetterDiscord Canary (1.14.6+) — стабильный 1.14.5
+#    не инициализируется на Discord 0.0.421.
+# 2) Передаёт работу приложению: у него есть Full Disk Access для папки Discord.
 set -u
 
-BD="$HOME/Library/Application Support/BetterDiscord/data/betterdiscord.asar"
-LOG="$HOME/Library/Application Support/BetterDiscord/auto-repair.log"
-SUPPORT="$HOME/Library/Application Support"
-PATCHED=0
+APP="/Applications/BetterDiscord Installer.app"
+BD="$HOME/Library/Application Support/BetterDiscord"
+ASAR="$BD/data/betterdiscord.asar"
+LOG="$BD/auto-repair.log"
+STAMP="$BD/.canary-check"
+NOW="$(/bin/date +%s)"
+LAST=0
+CHANGED=0
 
-mkdir -p "$(dirname "$BD")"
+[ -f "$STAMP" ] && LAST="$(/usr/bin/stat -f %m "$STAMP" 2>/dev/null || echo 0)"
 
-for DIR in "$SUPPORT/discord" "$SUPPORT/discordptb" "$SUPPORT/discordcanary"; do
-  [ -d "$DIR" ] || continue
-  for IDX in "$DIR"/app-*/modules/discord_desktop_core*/discord_desktop_core/index.js; do
-    [ -f "$IDX" ] || continue
-    if /usr/bin/grep -q "BetterDiscord/data/betterdiscord.asar" "$IDX" 2>/dev/null; then
-      continue
+if [ $((NOW - LAST)) -gt 21600 ]; then
+  /usr/bin/touch "$STAMP"
+  REMOTE="$(/usr/bin/curl -fsIL --max-time 20 \
+    "https://github.com/BetterDiscord/BetterDiscord/releases/download/canary/betterdiscord.asar" \
+    | /usr/bin/awk 'tolower($1)=="content-length:" {v=$2} END {gsub("\r","",v); print v}')"
+  LOCAL="$(/usr/bin/stat -f %z "$ASAR" 2>/dev/null || echo 0)"
+
+  if [ -n "$REMOTE" ] && [ "$REMOTE" != "$LOCAL" ]; then
+    if /usr/bin/curl -fL --retry 3 --max-time 120 -o "$ASAR.tmp" \
+      "https://github.com/BetterDiscord/BetterDiscord/releases/download/canary/betterdiscord.asar"; then
+      /bin/mv "$ASAR.tmp" "$ASAR"
+      CHANGED=1
+      echo "$(/bin/date '+%Y-%m-%d %H:%M:%S') canary-asar updated $LOCAL -> $REMOTE" >> "$LOG"
+    else
+      /bin/rm -f "$ASAR.tmp"
     fi
-    if [ ! -s "$BD" ]; then
-      /usr/bin/curl -fL --retry 3 -o "$BD.tmp" \
-        "https://github.com/BetterDiscord/BetterDiscord/releases/latest/download/betterdiscord.asar" \
-        || { /bin/rm -f "$BD.tmp"; continue; }
-      /bin/mv "$BD.tmp" "$BD"
-    fi
-    [ -f "$IDX.orig" ] || /bin/cp -p "$IDX" "$IDX.orig"
-    /usr/bin/printf 'require("%s");\nmodule.exports = require("./core.asar");\n' "$BD" > "$IDX"
-    PATCHED=$((PATCHED + 1))
-  done
-done
-
-# Если что-то починили и Discord запущен — перезапускаем, чтобы BD загрузился.
-if [ "$PATCHED" -gt 0 ]; then
-  APP=""
-  for C in "/Applications/Discord.app" "$HOME/Applications/Discord.app"; do
-    [ -d "$C" ] && APP="$C" && break
-  done
-  if [ -n "$APP" ] && /usr/bin/pgrep -x Discord >/dev/null 2>&1; then
-    /usr/bin/pkill -x Discord 2>/dev/null
-    /bin/sleep 2
-    /usr/bin/open "$APP" 2>/dev/null
   fi
-  echo "$(date '+%Y-%m-%d %H:%M:%S') patched=$PATCHED" >> "$LOG"
+fi
+
+if [ -d "$APP" ]; then
+  /usr/bin/open -g -j -n -a "$APP" --args --auto-repair
+else
+  echo "$(/bin/date '+%Y-%m-%d %H:%M:%S') app-not-found: $APP" >> "$LOG"
+fi
+
+# Если обновился asar — перезапускаем Discord, чтобы он подхватил новую версию.
+if [ "$CHANGED" -eq 1 ] && /usr/bin/pgrep -x Discord >/dev/null 2>&1; then
+  /bin/sleep 3
+  /usr/bin/pkill -x Discord 2>/dev/null
+  /bin/sleep 2
+  /usr/bin/open "/Applications/Discord.app" 2>/dev/null
 fi
 """#
 
@@ -384,6 +447,45 @@ fi
     }
 }
 
+// MARK: - Автовосстановление (выполняется приложением с Full Disk Access)
+
+func autoRepairLog(_ line: String) {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+    let text = "\(formatter.string(from: Date())) \(line)\n"
+    try? fm.createDirectory(at: bdRoot, withIntermediateDirectories: true)
+    let url = bdRoot.appendingPathComponent("auto-repair.log")
+    if let handle = try? FileHandle(forWritingTo: url) {
+        handle.seekToEndOfFile()
+        handle.write(text.data(using: .utf8)!)
+        try? handle.close()
+    } else {
+        try? text.write(to: url, atomically: true, encoding: .utf8)
+    }
+}
+
+func autoRepairIfNeeded() throws -> Int {
+    let idxs = coreIndexFiles()
+
+    if idxs.isEmpty {
+        if DiscordDataAccess.denied {
+            autoRepairLog("no-access: Full Disk Access required")
+        } else {
+            autoRepairLog("no-core: Discord is not launched")
+        }
+        return 0
+    }
+
+    if idxs.allSatisfy(isPatched) {
+        autoRepairLog("ok: already patched")
+        return 0
+    }
+
+    let result = try installBD()
+    autoRepairLog("patched=\(result.patched) already=\(result.already)")
+    return result.patched
+}
+
 // MARK: - CLI-режим (для тестов)
 
 let arguments = CommandLine.arguments
@@ -410,6 +512,18 @@ if arguments.contains("--cli-remove") {
         print("OK restored=\(n)")
         exit(0)
     } catch {
+        print("ERROR: \(error.localizedDescription)")
+        exit(1)
+    }
+}
+
+if arguments.contains("--auto-repair") {
+    do {
+        let n = try autoRepairIfNeeded()
+        print("OK patched=\(n)")
+        exit(0)
+    } catch {
+        autoRepairLog("error: \(error.localizedDescription)")
         print("ERROR: \(error.localizedDescription)")
         exit(1)
     }
@@ -448,6 +562,7 @@ final class AppModel: ObservableObject {
     @Published var autoRepair = true
     @Published var success = false
     @Published var appeared = false
+    @Published var needsPermission = false
 
     func start() {
         logger = { [weak self] line in
@@ -474,6 +589,15 @@ final class AppModel: ObservableObject {
         }
 
         let idxs = coreIndexFiles()
+        if DiscordDataAccess.denied {
+            kind = .error
+            title = "Нет доступа к папке Discord"
+            detail = "Выдайте Full Disk Access приложению BetterDiscord Installer, затем перезапустите его"
+            needsPermission = true
+            return
+        }
+        needsPermission = false
+
         if idxs.isEmpty {
             kind = .error
             title = "Discord ещё не запускался"
@@ -508,8 +632,8 @@ final class AppModel: ObservableObject {
     }
 
     func install() {
-        guard !busy else { return }
-        let auto = autoRepair
+        guard !busy, !needsPermission else { return }
+        let auto = true
 
         busy = true
         kind = .busy
@@ -524,6 +648,8 @@ final class AppModel: ObservableObject {
                 if auto { try? AutoRepair.enable() }
                 DispatchQueue.main.async {
                     self.busy = false
+                    self.needsPermission = false
+                    self.autoRepair = AutoRepair.isEnabled
                     self.kind = .ok
                     self.title = r.patched > 0
                         ? "Готово — BetterDiscord подключён"
@@ -538,8 +664,14 @@ final class AppModel: ObservableObject {
                 DispatchQueue.main.async {
                     self.busy = false
                     self.kind = .error
-                    self.title = "Ошибка установки"
-                    self.detail = error.localizedDescription
+                    if DiscordDataAccess.denied {
+                        self.needsPermission = true
+                        self.title = "Нужен Full Disk Access"
+                        self.detail = "Разрешите доступ приложению BetterDiscord Installer и перезапустите его"
+                    } else {
+                        self.title = "Ошибка установки"
+                        self.detail = error.localizedDescription
+                    }
                     self.appendLog("Ошибка: \(error.localizedDescription)")
                 }
             }
@@ -576,8 +708,14 @@ final class AppModel: ObservableObject {
                 DispatchQueue.main.async {
                     self.busy = false
                     self.kind = .error
-                    self.title = "Ошибка"
-                    self.detail = error.localizedDescription
+                    if DiscordDataAccess.denied {
+                        self.needsPermission = true
+                        self.title = "Нужен Full Disk Access"
+                        self.detail = "Разрешите доступ приложению BetterDiscord Installer и перезапустите его"
+                    } else {
+                        self.title = "Ошибка"
+                        self.detail = error.localizedDescription
+                    }
                     self.appendLog("Ошибка: \(error.localizedDescription)")
                 }
             }
@@ -603,6 +741,33 @@ final class AppModel: ObservableObject {
         }
 
         if kind == .ok { refreshDetail() }
+    }
+
+    func openFullDiskAccess() {
+        let candidates = [
+            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+        ]
+        for candidate in candidates {
+            if let url = URL(string: candidate), NSWorkspace.shared.open(url) {
+                return
+            }
+        }
+    }
+
+    func restartApp() {
+        let path = Bundle.main.bundlePath
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = ["-n", path]
+        try? process.run()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            NSApp.terminate(nil)
+        }
+    }
+
+    func recheckAccess() {
+        refresh()
     }
 }
 
@@ -817,6 +982,10 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 16) {
                 header
                 statusCard
+                if model.needsPermission {
+                    permissionCard
+                        .transition(.opacity)
+                }
                 installButton
                 secondaryRow
                 autoRepairCard
@@ -919,6 +1088,58 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.25), value: model.kind)
     }
 
+    private var permissionCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color(hex: 0xFBBF24))
+                Text("Нужен Full Disk Access")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer()
+            }
+
+            Text("macOS 26 защищает папку Discord. Включите BetterDiscord Installer в Full Disk Access, затем перезапустите приложение.")
+                .font(.system(size: 11))
+                .foregroundColor(.white.opacity(0.62))
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 10) {
+                Button("Открыть настройки") {
+                    model.openFullDiskAccess()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color(hex: 0x2563EB)))
+
+                Button("Перезапустить приложение") {
+                    model.restartApp()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white.opacity(0.82))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.white.opacity(0.08)))
+
+                Spacer()
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(hex: 0xF59E0B).opacity(0.10))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color(hex: 0xF59E0B).opacity(0.30), lineWidth: 1)
+        )
+    }
+
     private var installButton: some View {
         Button(action: { model.install() }) {
             HStack(spacing: 10) {
@@ -956,9 +1177,9 @@ struct ContentView: View {
             )
         }
         .buttonStyle(PressableButtonStyle())
-        .disabled(model.busy)
-        .opacity(model.busy ? 0.85 : 1)
-        .scaleEffect(installHover && !model.busy ? 1.012 : 1)
+        .disabled(model.busy || model.needsPermission)
+        .opacity(model.busy || model.needsPermission ? 0.55 : 1)
+        .scaleEffect(installHover && !model.busy && !model.needsPermission ? 1.012 : 1)
         .onHover { value in
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 installHover = value

@@ -52,11 +52,11 @@ curl -fsSL https://raw.githubusercontent.com/R3G1ST/betterdiscord-mac-installer/
 
 ### Option B — DMG
 
-1. Download **`BetterDiscord-Mac-Installer-1.0.0.dmg`** from the [latest release](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest).
+1. Download **`BetterDiscord-Mac-Installer-1.0.2.dmg`** from the [latest release](https://github.com/R3G1ST/betterdiscord-mac-installer/releases/latest).
 2. If macOS says **“Apple could not verify…”** or **“is damaged”**, click **Done** and run:
    ```sh
-   xattr -d com.apple.quarantine ~/Downloads/BetterDiscord-Mac-Installer-1.0.0.dmg
-   open ~/Downloads/BetterDiscord-Mac-Installer-1.0.0.dmg
+   xattr -d com.apple.quarantine ~/Downloads/BetterDiscord-Mac-Installer-1.0.2.dmg
+   open ~/Downloads/BetterDiscord-Mac-Installer-1.0.2.dmg
    ```
 3. Drag **BetterDiscord Installer** to **Applications**.
 4. Remove the quarantine flag from the installed app and open it:
@@ -103,6 +103,8 @@ module.exports = require("./core.asar");
 
 `betterdiscord.asar` is downloaded from the official [BetterDiscord releases](https://github.com/BetterDiscord/BetterDiscord/releases) — it is **not** bundled with this project.
 
+On Discord 0.0.421+ the installer uses the official **BetterDiscord Canary** build (development branch). Stable 1.14.5 does not initialize on those Discord versions; auto-repair updates the Canary asar every 6 hours and restarts Discord when it changes.
+
 Auto-repair files:
 
 ```text
@@ -118,7 +120,7 @@ Auto-repair files:
 | macOS | 12 Monterey or newer |
 | CPU | Apple Silicon + Intel (universal) |
 | Discord | Stable, PTB, Canary |
-| Installer version | 1.0.0 |
+| Installer version | 1.0.2 |
 
 Discord must be installed in `/Applications` or `~/Applications`.
 
@@ -139,6 +141,9 @@ Make sure the install finished without errors, then fully quit Discord (⌘Q) an
 
 **After a Discord update**
 Auto-repair handles it within a couple of minutes and restarts Discord. If auto-repair is disabled, just press **Install** again.
+
+**“No access to the Discord folder”**
+macOS 26 protects `~/Library/Application Support/discord`. Open the app's permission card (or **System Settings → Privacy & Security → Full Disk Access**), add **BetterDiscord Installer**, enable it, then restart the app. This is a one-time permission; auto-repair uses it afterwards.
 
 **Auto-repair log**
 
@@ -164,14 +169,14 @@ git clone https://github.com/R3G1ST/betterdiscord-mac-installer.git
 cd BetterDiscordInstaller
 
 ./build.sh              # universal app + icon
-./build-dmg.sh 1.0.0    # styled DMG in dist/
+./build-dmg.sh 1.0.2    # styled DMG in dist/
 ```
 
 Outputs:
 
 ```text
 dist/BetterDiscord Installer.app
-dist/BetterDiscord-Mac-Installer-1.0.0.dmg
+dist/BetterDiscord-Mac-Installer-1.0.2.dmg
 ```
 
 The app is ad-hoc signed (`codesign --force --deep --sign -`). Without a Developer ID certificate it cannot be notarized, so first launch requires right-click → Open.
